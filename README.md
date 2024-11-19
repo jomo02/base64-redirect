@@ -13,7 +13,7 @@ To use the `Base64Redirect` module, you need to build Caddy with this module inc
 go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
 
 # Build Caddy with the Base64Redirect module
-xcaddy build --with github.com/jomo02/base64redirect
+xcaddy build --with github.com/jomo02/base64-redirect
 ```
 
 ## Usage
@@ -35,7 +35,7 @@ To use the `Base64Redirect` module in your Caddy configuration, add a `base64_re
 ## Example Configuration
 ### Simple Redirect Example
 ```
-:80 {
+http://yourdomain.com {
     handle {
         base64_redirect {
             target https://example.com/redirect?url=
