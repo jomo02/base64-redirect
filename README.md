@@ -23,8 +23,10 @@ To use the `Base64Redirect` module in your Caddy configuration, add a `base64_re
 
 ```
 :80 {
-    base64_redirect {
-        target https://example.com/redirect?url=
+    route {
+        base64_redirect {
+            target https://example.com/redirect?url=
+        }
     }
 }
 ```
@@ -36,7 +38,7 @@ To use the `Base64Redirect` module in your Caddy configuration, add a `base64_re
 ### Simple Redirect Example
 ```
 http://yourdomain.com {
-    handle {
+    route {
         base64_redirect {
             target https://example.com/redirect?url=
         }

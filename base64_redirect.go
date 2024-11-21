@@ -7,12 +7,16 @@ import (
 	"strings"
 
 	"github.com/caddyserver/caddy/v2"
+	"github.com/caddyserver/caddy/v2/caddyconfig/httpcaddyfile"
+	"github.com/caddyserver/caddy/v2/caddyconfig/caddyfile"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
 )
 
 func init() {
 	fmt.Println("Registering Base64Redirect module")
 	caddy.RegisterModule(Base64Redirect{})
+	// Register the Caddyfile directive
+	httpcaddyfile.RegisterHandlerDirective("base64_redirect", parseCaddyfileHandler)
 }
 
 // Base64Redirect is a Caddy HTTP handler module that encodes the original URL and redirects.
@@ -30,7 +34,7 @@ func (Base64Redirect) CaddyModule() caddy.ModuleInfo {
 
 // ServeHTTP implements caddyhttp.MiddlewareHandler.
 func (br Base64Redirect) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) error {
-	fmt.Printf("Handling request for URL: %s\n", r.URL.String())
+	fmt.Printf("Handling request for URL: %s%s\n", r.Host, r.URL.String())
 
 	// Check if target was set
 	if br.Target == "" {
@@ -45,8 +49,8 @@ func (br Base64Redirect) ServeHTTP(w http.ResponseWriter, r *http.Request, next 
 	}
 
 	// Encode the original URL path and query to Base64
-	originalURL := r.URL.String()
-	encodedURL := base64.URLEncoding.EncodeToString([]byte(originalURL))
+	originalURL := "http://" + r.Host + r.URL.String()
+	encodedURL := base64.RawURLEncoding.EncodeToString([]byte(originalURL))
 
 	// Construct the redirect URL
 	redirectURL := fmt.Sprintf("%s%s", br.Target, encodedURL)
@@ -56,8 +60,34 @@ func (br Base64Redirect) ServeHTTP(w http.ResponseWriter, r *http.Request, next 
 	return nil
 }
 
+// UnmarshalCaddyfile reads configuration values from the Caddyfile
+func (br *Base64Redirect) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
+	for d.Next() {  // consume directive name
+		for d.NextBlock(0) {
+			if !d.Args(&br.Target) {
+				// not enough args
+				return d.ArgErr()
+			}
+			if d.NextArg() {
+				// too many args
+				return d.ArgErr()
+			}
+		}
+	}
+
+	return nil
+}
+
+// parseCaddyfileHandler unmarshals tokens from h into a new middleware handler value.
+func parseCaddyfileHandler(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error) {
+	var br Base64Redirect
+	err := br.UnmarshalCaddyfile(h.Dispenser)
+	return br, err
+}
+
 // Interface guards
 var (
 	_ caddy.Module                = (*Base64Redirect)(nil)
 	_ caddyhttp.MiddlewareHandler = (*Base64Redirect)(nil)
+	_ caddyfile.Unmarshaler       = (*Base64Redirect)(nil)
 )
